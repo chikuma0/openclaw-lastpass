@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export LC_ALL=C
+export LANG=C
+
 BIN_NAME="openclaw-lastpass"
 REPO="${REPO:-chikuma0/openclaw-lastpass}"
 VERSION="${VERSION:-latest}"
