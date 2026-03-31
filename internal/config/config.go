@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -67,6 +68,20 @@ func Load(path string) (*Config, error) {
 	return cfg, nil
 }
 
+func LoadOptional(path string) (*Config, bool, error) {
+	cfg, err := Load(path)
+	if err == nil {
+		return cfg, true, nil
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return &Config{
+			Path:     path,
+			Mappings: make(map[string]Mapping),
+		}, false, nil
+	}
+	return nil, false, err
+}
+
 func (c *Config) Validate() error {
 	var issues []string
 
@@ -119,6 +134,41 @@ func ParseField(raw string) (FieldSelector, error) {
 	default:
 		return FieldSelector{Kind: FieldCustom, Name: trimmed}, nil
 	}
+}
+
+func Write(path string, mappings map[string]Mapping) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("create config directory for %q: %w", path, err)
+	}
+
+	data, err := marshalMappings(mappings)
+	if err != nil {
+		return fmt.Errorf("marshal config %q: %w", path, err)
+	}
+
+	tempFile, err := os.CreateTemp(filepath.Dir(path), "mapping-*.json")
+	if err != nil {
+		return fmt.Errorf("create temp config for %q: %w", path, err)
+	}
+
+	tempPath := tempFile.Name()
+	defer os.Remove(tempPath)
+
+	if _, err := tempFile.Write(data); err != nil {
+		tempFile.Close()
+		return fmt.Errorf("write temp config for %q: %w", path, err)
+	}
+	if err := tempFile.Close(); err != nil {
+		return fmt.Errorf("close temp config for %q: %w", path, err)
+	}
+	if err := os.Chmod(tempPath, 0o600); err != nil {
+		return fmt.Errorf("chmod temp config for %q: %w", path, err)
+	}
+	if err := os.Rename(tempPath, path); err != nil {
+		return fmt.Errorf("replace config %q: %w", path, err)
+	}
+
+	return nil
 }
 
 func (f FieldSelector) DisplayName() string {
@@ -182,4 +232,43 @@ func normalizePath(path, home string) string {
 		return filepath.Clean(filepath.Join(home, path[2:]))
 	}
 	return filepath.Clean(path)
+}
+
+func marshalMappings(mappings map[string]Mapping) ([]byte, error) {
+	ids := make([]string, 0, len(mappings))
+	for id := range mappings {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+
+	var buf bytes.Buffer
+	buf.WriteString("{\n")
+	for i, id := range ids {
+		value, err := json.Marshal(mappings[id])
+		if err != nil {
+			return nil, err
+		}
+
+		buf.WriteString("  ")
+		key, err := json.Marshal(id)
+		if err != nil {
+			return nil, err
+		}
+		buf.Write(key)
+		buf.WriteString(": ")
+
+		var indented bytes.Buffer
+		if err := json.Indent(&indented, value, "  ", "  "); err != nil {
+			return nil, err
+		}
+		buf.Write(indented.Bytes())
+
+		if i < len(ids)-1 {
+			buf.WriteString(",")
+		}
+		buf.WriteString("\n")
+	}
+	buf.WriteString("}\n")
+
+	return buf.Bytes(), nil
 }

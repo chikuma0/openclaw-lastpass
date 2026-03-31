@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "generated_at": "2026-03-31T00:00:00Z",
+  "entries": [
+    {
+      "lastpass_id": "377704248130093254",
+      "name": "OPENAI_API_KEY",
+      "fullname": "API Keys/dera-next/OPENAI_API_KEY",
+      "group": "API Keys/dera-next",
+      "suggested_ref_id": "providers/openai/apiKey",
+      "suggested_field": "notes",
+      "confidence": "high",
+      "reason": "matched openai/chatgpt naming with api key or token keywords in entry name/path",
+      "approved": false
+    },
+    {
+      "lastpass_id": "122004098731245600",
+      "name": "github_pat_repo_admin",
+      "fullname": "Tokens/github_pat_repo_admin",
+      "group": "Tokens",
+      "suggested_ref_id": "github/token",
+      "suggested_field": "notes",
+      "confidence": "high",
+      "reason": "matched github personal access token naming in entry name/path",
+      "approved": true
+    }
+  ]
+}

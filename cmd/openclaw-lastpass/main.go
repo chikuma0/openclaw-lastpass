@@ -46,8 +46,14 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case "help", "-h", "--help":
 		printRootUsage(stdout)
 		return exitOK
+	case "apply":
+		return runApply(args[1:], stdout, stderr)
+	case "discover":
+		return runDiscover(args[1:], stdout, stderr)
 	case "get":
 		return runGet(args[1:], stdout, stderr)
+	case "init":
+		return runInit(args[1:], stdout, stderr)
 	case "list":
 		return runList(args[1:], stdout, stderr)
 	case "doctor":
@@ -300,7 +306,7 @@ func writeJSON(w io.Writer, value any) error {
 }
 
 func printRootUsage(w io.Writer) {
-	commands := []string{"doctor", "get", "list", "openclaw"}
+	commands := []string{"apply", "discover", "doctor", "get", "init", "list", "openclaw"}
 	sort.Strings(commands)
 
 	fmt.Fprintln(w, "Usage: openclaw-lastpass <command> [options]")
@@ -308,10 +314,16 @@ func printRootUsage(w io.Writer) {
 	fmt.Fprintln(w, "Commands:")
 	for _, command := range commands {
 		switch command {
+		case "apply":
+			fmt.Fprintln(w, "  apply     Validate and write approved draft mappings to the resolver config")
+		case "discover":
+			fmt.Fprintln(w, "  discover  Scan LastPass metadata and write an editable draft mapping plan")
 		case "doctor":
 			fmt.Fprintln(w, "  doctor    Run local diagnostics for lpass access and mapping health")
 		case "get":
 			fmt.Fprintln(w, "  get       Resolve one configured secret ID")
+		case "init":
+			fmt.Fprintln(w, "  init      Guide first-run setup and generate discovery/draft files")
 		case "list":
 			fmt.Fprintln(w, "  list      List configured secret IDs")
 		case "openclaw":
