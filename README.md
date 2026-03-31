@@ -1,54 +1,94 @@
 # openclaw-lastpass
 
-`openclaw-lastpass` is a small, read-only LastPass secret resolver for OpenClaw and direct CLI use.
+`openclaw-lastpass` is a small, read-only bridge between LastPass CLI (`lpass`) and OpenClaw's exec-based secret provider model. It also works directly from the command line for one-off lookups.
 
-It is a thin adapter around the locally installed LastPass CLI, `lpass`. It does not manage vaults, browser autofill, sharing, editing, migration, or any broader secret-management workflow. It resolves explicitly mapped secret IDs to specific LastPass entries and fields, and in v2 it can also generate a metadata-only draft mapping plan for human review.
-
-## Quick Start
-
-Normal users do not need `git clone` or `go build`.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/chikuma0/openclaw-lastpass/main/install.sh | bash
-lpass login you@example.com
-openclaw-lastpass init
-```
-
-## What This Is
-
-- A narrow exec-based secret provider for OpenClaw
-- A small CLI for resolving one mapped secret at a time
-- A least-privilege bridge between local config and `lpass`
-- A read-only tool aimed at API keys, tokens, DB credentials, URLs, and similar machine-usable secrets
-
-## What This Is Not
-
-- Not a general password manager
-- Not a browser extension or autofill tool
-- Not a LastPass vault abstraction layer
-- Not a bulk migration or audit platform
-- Not a 1Password replacement
-- Not a write/edit/delete client for LastPass entries
+This project is for people who already use LastPass locally and want a safer workflow for machine secrets than copying API keys, tokens, URLs, and credentials through docs, spreadsheets, or ad hoc notes. It is not a new password manager. It is not a vault platform. It is a narrow adapter for explicit, reviewable secret mappings.
 
 ## Why It Exists
 
-Some teams already have `lpass` installed, authenticated locally, and want OpenClaw to resolve a small set of machine secrets without exposing a whole vault. This project keeps that integration boring and explicit:
+If your team is already on LastPass, the fastest improvement is often not "replace your whole secret stack this week." It is "move machine secrets into clear LastPass entries and resolve only the few values your tools actually need."
 
-1. You define local secret IDs in a JSON mapping file.
-2. Each ID points to one LastPass entry and one field.
-3. `openclaw-lastpass` resolves only those mapped IDs through `lpass`.
+`openclaw-lastpass` is that smaller step:
 
-## Prerequisites
+- safer than keeping machine secrets in docs or spreadsheets
+- lower-friction than buying or migrating to a different secret manager just to get OpenClaw working
+- narrower than a full-vault integration, because only mapped secret IDs are resolvable
 
-- `lpass` installed and available in `PATH`
-- A working local LastPass CLI session on the machine where the command runs
-- macOS or Linux for v1
+## Who It Is For
 
-Windows-specific behavior is not a v1 target beyond anything that works incidentally through Go and `lpass`.
+- developers or teams already using LastPass locally on macOS or Linux
+- OpenClaw users who want an exec-based secret provider backed by `lpass`
+- people who want explicit, least-privilege mappings for API keys, tokens, DB credentials, service URLs, and similar machine-usable secrets
+
+## Who It Is Not For
+
+- people looking for browser autofill or browser automation
+- people looking for a full LastPass client, vault browser, or admin platform
+- people looking for auto-login, auto-apply, blind vault export, or bulk migration tooling
+- people looking for a universal secret-manager abstraction layer
+
+## Safety Boundaries
+
+- read-only only. The tool never creates, edits, or deletes LastPass items.
+- metadata-first discovery. `discover` and `init` do not fetch passwords or note bodies by default.
+- human-reviewed apply. Draft plans are suggestions, not truth.
+- no blind vault dump. The project does not use `lpass export`.
+- no browser automation or browser extension integration.
+- no silent OpenClaw mutation. Provider setup is printed as guidance only.
+- no secret logging. Secret values are never logged and are not persisted by this tool.
+
+## 3-Minute Quickstart
+
+1. Install the latest release:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/chikuma0/openclaw-lastpass/main/install.sh | bash
+```
+
+2. Log in with the local LastPass CLI:
+
+```bash
+lpass login you@example.com
+```
+
+3. Generate discovery metadata and a reviewable draft plan:
+
+```bash
+openclaw-lastpass init
+```
+
+4. Review the `mapping.draft.json` path printed by `init`, then edit it:
+
+```bash
+$EDITOR /path/to/mapping.draft.json
+```
+
+5. Preview the approved mapping changes:
+
+```bash
+openclaw-lastpass apply --plan /path/to/mapping.draft.json --dry-run
+```
+
+6. Validate approved entries through `lpass` before writing:
+
+```bash
+openclaw-lastpass apply --plan /path/to/mapping.draft.json --validate
+```
+
+Default config locations:
+
+- Linux: `~/.config/openclaw-lastpass`
+- macOS: `~/Library/Application Support/openclaw-lastpass`
+
+If you want a first diagnostic pass at any point, run:
+
+```bash
+openclaw-lastpass doctor
+```
 
 ## Install
 
-Install via the release installer:
+Normal users do not need `git clone` or `go build`.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/chikuma0/openclaw-lastpass/main/install.sh | bash
@@ -56,363 +96,95 @@ curl -fsSL https://raw.githubusercontent.com/chikuma0/openclaw-lastpass/main/ins
 
 The installer:
 
-- detects macOS/Linux and amd64/arm64
-- resolves the latest GitHub Release tag unless `VERSION` is set
-- downloads the matching GitHub Release asset
-- installs to `/usr/local/bin` if writable, otherwise `~/.local/bin`
-- verifies the downloaded archive before installing
-- prints the next steps:
-  - install `lpass` if needed
-  - `lpass login you@example.com`
-  - `openclaw-lastpass init`
+- detects Linux or macOS and amd64 or arm64
+- downloads the matching GitHub Releases asset
+- installs to `/usr/local/bin` when writable, otherwise `~/.local/bin`
+- verifies the archive layout before installing
+- prints the next commands: `lpass login` and `openclaw-lastpass init`
 
-Manual release packaging details are documented in [`docs/release.md`](./docs/release.md).
+If the install directory is not on `PATH`, the script tells you exactly what to export.
 
-## Build From Source
+## How The Workflow Fits Together
 
-Go 1.24+ is only required if you want to build from source.
+1. `init` or `discover` scans LastPass metadata through `lpass ls --format`.
+2. The tool writes `discovery.json` and `mapping.draft.json`.
+3. You review the draft plan and mark entries as approved.
+4. `apply` writes the final resolver mapping, preferring LastPass item IDs when available.
+5. `get` and `openclaw` resolve only the secret IDs present in that mapping file.
 
-Build with Go directly:
+That design is deliberate. Discovery is allowed to suggest. Apply is allowed to write approved mappings. Neither step is allowed to guess and silently wire secrets into your workflow.
 
-```bash
-go build -o ./dist/openclaw-lastpass ./cmd/openclaw-lastpass
-```
+## Recommended LastPass Structure
 
-Or use the included `Makefile`:
+The best results come from treating LastPass entries as machine-secret containers, not as general notes or reused personal login items.
 
-```bash
-make build
-```
+### Pattern 1: One Secret Per Entry
 
-Build local release assets:
+Use this when the entry exists to hold one opaque token.
 
-```bash
-make release-assets VERSION=v0.0.1
-```
+LastPass entry:
 
-## Configuration
+- name: `Machine Secrets/acme/prod/OPENAI_API_KEY`
+- password field: the actual OpenAI API key
 
-The v1 config format is a plain JSON object mapping OpenClaw-style secret IDs to LastPass entry/field pairs.
+Resolver mapping:
 
 ```json
 {
   "providers/openai/apiKey": {
-    "entry": "OpenClaw/OpenAI",
+    "entry": "Machine Secrets/acme/prod/OPENAI_API_KEY",
     "field": "password"
-  },
+  }
+}
+```
+
+### Pattern 2: One Entry Per Repo x Environment
+
+Use this when several related machine secrets belong to one runtime or deployment boundary.
+
+LastPass entry:
+
+- name: `Machine Secrets/acme/prod/runtime`
+- custom fields:
+  - `ANTHROPIC_API_KEY`
+  - `DATABASE_URL`
+  - `SUPABASE_SERVICE_ROLE`
+
+Resolver mapping:
+
+```json
+{
   "providers/anthropic/apiKey": {
-    "entry": "OpenClaw/Anthropic",
-    "field": "password"
-  }
-}
-```
-
-Examples live in [`examples/mapping.example.json`](./examples/mapping.example.json).
-
-Manual mappings may use LastPass entry names or LastPass unique IDs. The v2 `apply` flow prefers unique IDs in the final resolver config to avoid ambiguous names.
-
-### Supported Field Targets
-
-V1 supports:
-
-- `password`
-- `username`
-- `notes` or `note`
-- Custom field names such as `DATABASE_URL` or `API Token`
-
-Built-in field names are case-insensitive and normalized like this:
-
-- `password` or `Password` -> `lpass show --password <entry>`
-- `username` or `Username` -> `lpass show --username <entry>`
-- `notes`, `Notes`, or `note` -> `lpass show --notes <entry>`
-- any other field value -> `lpass show --field=<field> <entry>`
-
-The preferred config convention is lowercase built-in field names such as `password`, `username`, and `notes`.
-
-## V2 Discovery Workflow
-
-V2 adds a review-first workflow for reducing mapping friction without exposing secret values:
-
-1. `discover` scans LastPass metadata only.
-2. It writes:
-   - `discovery.json`
-   - `mapping.draft.json`
-3. You review and edit `mapping.draft.json`.
-4. `apply` validates and writes approved entries into the final resolver mapping.
-
-Recommended flow:
-
-```bash
-openclaw-lastpass discover
-$EDITOR ~/.config/openclaw-lastpass/mapping.draft.json
-openclaw-lastpass apply --plan ~/.config/openclaw-lastpass/mapping.draft.json --dry-run
-openclaw-lastpass apply --plan ~/.config/openclaw-lastpass/mapping.draft.json
-```
-
-### Metadata-Only Discovery Warning
-
-`discover` is intentionally conservative:
-
-- it uses `lpass ls --format`
-- it does not use `lpass export`
-- it does not dump passwords
-- it does not dump note bodies by default
-- suggestions are heuristics only, not truth
-
-Discovery suggestions are based on entry names and paths, not on secret values.
-
-### Draft Plan Schema
-
-The editable draft plan schema looks like this:
-
-```json
-{
-  "version": 1,
-  "generated_at": "2026-03-31T00:00:00Z",
-  "entries": [
-    {
-      "lastpass_id": "377704248130093254",
-      "name": "OPENAI_API_KEY",
-      "fullname": "API Keys/dera-next/OPENAI_API_KEY",
-      "group": "API Keys/dera-next",
-      "suggested_ref_id": "providers/openai/apiKey",
-      "suggested_field": "notes",
-      "confidence": "high",
-      "reason": "matched openai/chatgpt naming with api key or token keywords in entry name/path",
-      "approved": false
-    }
-  ]
-}
-```
-
-An example draft plan lives in [`examples/mapping.draft.example.json`](./examples/mapping.draft.example.json).
-
-Fields intended for human editing:
-
-- `approved`
-- `suggested_ref_id`
-- `suggested_field`
-- `disabled`
-
-### How Apply Works
-
-`apply` only consumes approved, non-disabled entries from the draft plan.
-
-- It merges approved entries into the existing resolver mapping file.
-- It does not delete unrelated mappings.
-- It writes LastPass unique IDs into the final `entry` field when they are available in the plan.
-- It does not resolve secrets unless `--validate` is explicitly requested.
-
-Example final mapping written by `apply`:
-
-```json
-{
-  "providers/openai/apiKey": {
-    "entry": "377704248130093254",
-    "field": "notes"
-  }
-}
-```
-
-## V3 Init Workflow
-
-V3 adds a guided first-run onboarding command:
-
-```bash
-openclaw-lastpass init
-```
-
-`init` is intentionally narrow:
-
-- checks whether `lpass` is installed
-- checks whether the LastPass CLI session looks usable
-- creates the config directory if needed
-- generates or refreshes:
-  - `~/.config/openclaw-lastpass/discovery.json`
-  - `~/.config/openclaw-lastpass/mapping.draft.json`
-- prints exact next commands for review and apply
-- does not fetch secret values by default
-- does not auto-apply
-- does not silently mutate OpenClaw config
-
-If a draft already exists, `init` keeps it and tells you to rerun with `--refresh` if you want a new one.
-
-Example first run:
-
-```bash
-lpass login you@example.com
-openclaw-lastpass init
-```
-
-Example refresh:
-
-```bash
-openclaw-lastpass init --refresh
-```
-
-### Config Path Resolution
-
-Resolution order:
-
-1. `--config /path/to/mapping.json`
-2. `OPENCLAW_LASTPASS_CONFIG`
-3. Default platform path
-
-Default paths:
-
-- macOS: `~/Library/Application Support/openclaw-lastpass/mapping.json`
-- Linux: `~/.config/openclaw-lastpass/mapping.json`
-- Any platform with `XDG_CONFIG_HOME` set: `$XDG_CONFIG_HOME/openclaw-lastpass/mapping.json`
-
-## Commands
-
-### `init`
-
-Run guided first-run onboarding.
-
-```bash
-openclaw-lastpass init
-```
-
-Refresh an existing draft:
-
-```bash
-openclaw-lastpass init --refresh
-```
-
-If OpenClaw is installed, print the recommended provider snippet too:
-
-```bash
-openclaw-lastpass init --print-openclaw-config
-```
-
-### `discover`
-
-Scan LastPass metadata, classify likely machine-secret candidates, and write review files to disk.
-
-```bash
-openclaw-lastpass discover
-```
-
-By default this writes:
-
-- `~/.config/openclaw-lastpass/discovery.json`
-- `~/.config/openclaw-lastpass/mapping.draft.json`
-
-You can override the output directory or individual output files:
-
-```bash
-openclaw-lastpass discover --out-dir /tmp/openclaw-lastpass
-openclaw-lastpass discover --discovery-out /tmp/discovery.json --draft-out /tmp/mapping.draft.json
-```
-
-### `apply`
-
-Read an approved draft plan and merge approved entries into the final resolver mapping.
-
-```bash
-openclaw-lastpass apply --plan ~/.config/openclaw-lastpass/mapping.draft.json
-```
-
-Preview changes without writing:
-
-```bash
-openclaw-lastpass apply --plan ~/.config/openclaw-lastpass/mapping.draft.json --dry-run
-```
-
-Optional validation through `lpass`:
-
-```bash
-openclaw-lastpass apply --plan ~/.config/openclaw-lastpass/mapping.draft.json --validate --dry-run
-```
-
-Optionally print a recommended OpenClaw provider snippet if `openclaw` is installed:
-
-```bash
-openclaw-lastpass apply --plan ~/.config/openclaw-lastpass/mapping.draft.json --print-openclaw-config --dry-run
-```
-
-### `get`
-
-Resolve one configured secret ID.
-
-```bash
-openclaw-lastpass get providers/openai/apiKey
-```
-
-Print JSON instead of raw value:
-
-```bash
-openclaw-lastpass get --json providers/openai/apiKey
-```
-
-### `list`
-
-List configured IDs only. No secret values are printed.
-
-```bash
-openclaw-lastpass list
-```
-
-### `doctor`
-
-Run local diagnostics for:
-
-- `lpass` availability
-- config presence and readability
-- config structure validity
-- LastPass CLI session usability
-- per-mapping read-only resolution checks
-
-```bash
-openclaw-lastpass doctor
-```
-
-### `openclaw`
-
-Read an OpenClaw exec-provider request from `stdin` and emit only JSON on `stdout`.
-
-```bash
-printf '%s\n' \
-  '{"protocolVersion":1,"provider":"lastpass","ids":["providers/openai/apiKey"]}' \
-  | openclaw-lastpass openclaw
-```
-
-Request shape:
-
-```json
-{
-  "protocolVersion": 1,
-  "provider": "lastpass",
-  "ids": [
-    "providers/openai/apiKey"
-  ]
-}
-```
-
-Response shape:
-
-```json
-{
-  "protocolVersion": 1,
-  "values": {
-    "providers/openai/apiKey": "..."
+    "entry": "Machine Secrets/acme/prod/runtime",
+    "field": "ANTHROPIC_API_KEY"
   },
-  "errors": {
-    "some/other/id": {
-      "message": "mapping not found"
-    }
+  "services/acme/databaseUrl": {
+    "entry": "Machine Secrets/acme/prod/runtime",
+    "field": "DATABASE_URL"
+  },
+  "supabase/serviceRole": {
+    "entry": "Machine Secrets/acme/prod/runtime",
+    "field": "SUPABASE_SERVICE_ROLE"
   }
 }
 ```
 
-Partial success is supported. `stdout` is reserved for the machine-readable response. Diagnostics go to `stderr`.
+Built-in field names are normalized like this:
+
+- `password` -> `lpass show --password`
+- `username` -> `lpass show --username`
+- `notes` or `note` -> `lpass show --notes`
+- anything else -> `lpass show --field=<field>`
+
+Prefer lowercase built-ins in config files: `password`, `username`, and `notes`.
+
+One important limitation today: the final `mapping.json` can point several secret IDs at the same LastPass entry, but `discover` and `apply` stay conservative and only draft one suggestion per LastPass item. Bundled custom-field entries are fully supported in the final resolver mapping, but you may still hand-edit the final mapping for extra fields after apply.
+
+More structuring guidance lives in [`docs/secret-structure.md`](./docs/secret-structure.md).
 
 ## OpenClaw Integration
 
-An example config snippet is included at [`examples/openclaw.example.json`](./examples/openclaw.example.json).
-
-Example:
+Once you have an approved mapping, wire the binary into OpenClaw as an exec-based secret provider. The included example is in [`examples/openclaw.example.json`](./examples/openclaw.example.json).
 
 ```json
 {
@@ -430,41 +202,92 @@ Example:
 }
 ```
 
-## Security Posture And Limitations
+Use `command -v openclaw-lastpass` to find the installed binary path. If you keep the mapping file outside the default location, either pass `--config` in `args` or expose `OPENCLAW_LASTPASS_CONFIG` to the process.
 
-- Read-only only. This tool never creates, edits, or deletes LastPass items.
-- Least privilege by mapping. Only configured IDs are resolvable.
-- Discovery is metadata-only and does not fetch secret values.
-- `init` is metadata-first and does not auto-apply or auto-wire secrets into OpenClaw.
-- No secret persistence. Resolved values are not written to disk by this tool.
-- No secret logging. The CLI does not print secret values except where the command contract requires them on `stdout`.
-- `doctor` validates mappings by doing read-only lookups and discarding the returned values in memory.
-- `apply` does not fetch secret values unless `--validate` is explicitly requested.
-- Discovery suggestions are guesses based on names and paths and must be reviewed by a human before apply.
-- `lpass` controls authentication and local session behavior. This project assumes `lpass` is already installed and authenticated locally.
-- Entry names must be unique enough for `lpass` to resolve to a single item. If not, use a unique LastPass entry ID in the mapping instead.
-- Multiline values are supported, but `lpass` appends a trailing newline to command output, so exact preservation of an intentional final newline depends on `lpass` behavior.
+If OpenClaw is installed locally, these commands print a recommended provider snippet without changing anything automatically:
 
-## Migration Guidance
+```bash
+openclaw-lastpass init --print-openclaw-config
+openclaw-lastpass apply --plan /path/to/mapping.draft.json --dry-run --print-openclaw-config
+```
 
-If you are moving machine secrets out of documents or ad hoc notes into LastPass, keep the migration explicit:
+Detailed setup notes are in [`docs/openclaw-setup.md`](./docs/openclaw-setup.md).
 
-- Create dedicated LastPass entries for machine credentials instead of reusing personal login entries.
-- Use stable, unique entry names or map directly by LastPass item ID.
-- Prefer custom field names for structured machine data such as `DATABASE_URL`, `API_TOKEN`, or `SERVICE_URL`.
-- Map only the specific secret IDs that OpenClaw actually needs.
-- Treat this tool as a resolver adapter, not a way to expose your whole vault to an agent.
+## Commands
 
-## Testing
+- `init`: guided first run that checks `lpass`, checks login state, and writes `discovery.json` plus `mapping.draft.json`
+- `discover`: metadata-only discovery without the first-run guidance
+- `apply`: validates and writes approved draft plan entries into the final resolver mapping
+- `get`: resolves one configured secret ID directly
+- `list`: lists configured secret IDs without printing values
+- `doctor`: checks local install, mapping validity, and read-only resolution health
+- `openclaw`: protocol mode for OpenClaw's exec-based provider model
 
-Run the test suite:
+Use `openclaw-lastpass <command> --help` for full flags.
+
+## Examples
+
+- Final resolver mapping with entry names: [`examples/mapping.example.json`](./examples/mapping.example.json)
+- Final resolver mapping with LastPass item IDs: [`examples/mapping.final.example.json`](./examples/mapping.final.example.json)
+- Editable draft plan: [`examples/mapping.draft.example.json`](./examples/mapping.draft.example.json)
+- OpenClaw provider snippet: [`examples/openclaw.example.json`](./examples/openclaw.example.json)
+
+## Troubleshooting
+
+Start with:
+
+```bash
+openclaw-lastpass doctor
+```
+
+Common problems:
+
+- `lpass` missing from `PATH`
+- not logged in to LastPass locally
+- ambiguous entry names that match multiple vault items
+- using `password` or `notes` as custom field names by mistake
+- install directory not present on `PATH`
+
+See [`docs/troubleshooting.md`](./docs/troubleshooting.md) for concrete fixes.
+
+## Docs
+
+- [`docs/secret-structure.md`](./docs/secret-structure.md): how to structure LastPass entries for single-secret and bundled repo/environment use cases
+- [`docs/openclaw-setup.md`](./docs/openclaw-setup.md): wiring the approved mapping into OpenClaw
+- [`docs/troubleshooting.md`](./docs/troubleshooting.md): install, login, field, and path troubleshooting
+- [`docs/release.md`](./docs/release.md): release artifact naming and packaging flow
+- [`VISION.md`](./VISION.md): project intent, audience, and scope guardrails
+
+## Scope And Non-Goals
+
+This project intentionally does not try to become:
+
+- a new password manager
+- a browser extension or browser automation tool
+- a full LastPass vault abstraction
+- an auto-login system
+- a write/edit/delete client for LastPass
+- a bulk import, migration, or audit platform
+- a generic secret-management platform
+
+Simplicity and trust matter more than feature count here.
+
+## Contributing, Support, And Security
+
+- Contribution guide: [`CONTRIBUTING.md`](./CONTRIBUTING.md)
+- Support and bug-reporting guidance: [`SUPPORT.md`](./SUPPORT.md)
+- Security reporting guidance: [`SECURITY.md`](./SECURITY.md)
+
+## Build From Source
+
+If you want to build locally:
+
+```bash
+go build -o ./dist/openclaw-lastpass ./cmd/openclaw-lastpass
+```
+
+Run tests:
 
 ```bash
 go test ./...
-```
-
-Format the code:
-
-```bash
-go fmt ./...
 ```

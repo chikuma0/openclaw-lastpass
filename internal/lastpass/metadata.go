@@ -2,12 +2,34 @@ package lastpass
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
-const metadataSeparator = "\x1f"
+const (
+	metadataSeparatorIDName        = "\x1f"
+	metadataSeparatorNameFullName  = "\x1e"
+	metadataSeparatorFullNameGroup = "\x1d"
+	metadataSeparatorGroupURL      = "\x1c"
+	metadataSeparatorURLUsername   = "\x1b"
+)
+
+var metadataFieldSeparators = []string{
+	metadataSeparatorIDName,
+	metadataSeparatorNameFullName,
+	metadataSeparatorFullNameGroup,
+	metadataSeparatorGroupURL,
+	metadataSeparatorURLUsername,
+}
+
+var metadataBoundaryNames = []string{
+	"id",
+	"name",
+	"fullname",
+	"group",
+	"url",
+}
 
 type MetadataEntry struct {
 	ID       string `json:"id"`
@@ -19,7 +41,15 @@ type MetadataEntry struct {
 }
 
 func (c *Client) ListMetadata(ctx context.Context) ([]MetadataEntry, error) {
-	result, err := c.run(ctx, "ls", "--sync=auto", "--color=never", "--format", "%ai"+metadataSeparator+"%an"+metadataSeparator+"%aN"+metadataSeparator+"%ag"+metadataSeparator+"%al"+metadataSeparator+"%au")
+	// Use a different control-character separator for each boundary so a delimiter
+	// collision inside one metadata field does not break the whole record.
+	result, err := c.run(ctx, "ls", "--sync=auto", "--color=never", "--format",
+		"%ai"+metadataSeparatorIDName+
+			"%an"+metadataSeparatorNameFullName+
+			"%aN"+metadataSeparatorFullNameGroup+
+			"%ag"+metadataSeparatorGroupURL+
+			"%al"+metadataSeparatorURLUsername+
+			"%au")
 	if err != nil {
 		return nil, c.wrapError("ls", "", "", result, err)
 	}
@@ -53,22 +83,9 @@ func ParseMetadataList(output string) ([]MetadataEntry, error) {
 			continue
 		}
 
-		fields := strings.Split(line, metadataSeparator)
-		if len(fields) != 6 {
-			return nil, fmt.Errorf("parse metadata line %d: expected 6 fields, got %d", index+1, len(fields))
-		}
-
-		entry := MetadataEntry{
-			ID:       strings.TrimSpace(fields[0]),
-			Name:     fields[1],
-			FullName: fields[2],
-			Group:    fields[3],
-			URL:      strings.TrimSpace(fields[4]),
-			Username: sanitizeUsername(fields[5]),
-		}
-
-		if entry.ID == "" {
-			return nil, errors.New("parse metadata: entry ID must not be empty")
+		entry, err := parseMetadataLine(line, index+1)
+		if err != nil {
+			return nil, err
 		}
 
 		entries = append(entries, entry)
@@ -91,4 +108,50 @@ func sanitizeUsername(username string) string {
 	default:
 		return trimmed
 	}
+}
+
+func parseMetadataLine(line string, lineNumber int) (MetadataEntry, error) {
+	fields := make([]string, 0, len(metadataFieldSeparators)+1)
+	remainder := line
+
+	for index, separator := range metadataFieldSeparators {
+		field, rest, ok := strings.Cut(remainder, separator)
+		if !ok {
+			return MetadataEntry{}, metadataParseError(lineNumber, line,
+				fmt.Sprintf("missing separator %s after %s field", strconv.QuoteToASCII(separator), metadataBoundaryNames[index]))
+		}
+		fields = append(fields, field)
+		remainder = rest
+	}
+
+	fields = append(fields, remainder)
+	entry := MetadataEntry{
+		ID:       strings.TrimSpace(fields[0]),
+		Name:     fields[1],
+		FullName: fields[2],
+		Group:    fields[3],
+		URL:      strings.TrimSpace(fields[4]),
+		Username: sanitizeUsername(fields[5]),
+	}
+
+	if entry.ID == "" {
+		return MetadataEntry{}, metadataParseError(lineNumber, line, "entry ID must not be empty")
+	}
+
+	return entry, nil
+}
+
+func metadataParseError(lineNumber int, line, detail string) error {
+	return fmt.Errorf("parse metadata line %d: %s; preview=%s", lineNumber, detail, metadataLinePreview(line))
+}
+
+func metadataLinePreview(line string) string {
+	const maxPreviewBytes = 160
+
+	preview := line
+	if len(preview) > maxPreviewBytes {
+		preview = preview[:maxPreviewBytes] + "..."
+	}
+
+	return strconv.QuoteToASCII(preview)
 }

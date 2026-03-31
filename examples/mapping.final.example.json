@@ -1,18 +1,18 @@
 {
   "providers/openai/apiKey": {
-    "entry": "Machine Secrets/acme/prod/OPENAI_API_KEY",
+    "entry": "377704248130093254",
     "field": "password"
   },
   "providers/anthropic/apiKey": {
-    "entry": "Machine Secrets/acme/prod/runtime",
+    "entry": "122004098731245600",
     "field": "ANTHROPIC_API_KEY"
   },
   "services/acme/databaseUrl": {
-    "entry": "Machine Secrets/acme/prod/runtime",
+    "entry": "122004098731245600",
     "field": "DATABASE_URL"
   },
   "supabase/serviceRole": {
-    "entry": "Machine Secrets/acme/prod/runtime",
+    "entry": "122004098731245600",
     "field": "SUPABASE_SERVICE_ROLE"
   }
 }

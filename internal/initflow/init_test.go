@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/openclaw/openclaw-lastpass/internal/lastpass"
+	"github.com/chikuma0/openclaw-lastpass/internal/lastpass"
 )
 
 type fakeLastPassClient struct {

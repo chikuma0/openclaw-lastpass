@@ -11,11 +11,11 @@ import (
 	"sort"
 	"time"
 
-	"github.com/openclaw/openclaw-lastpass/internal/config"
-	"github.com/openclaw/openclaw-lastpass/internal/doctor"
-	"github.com/openclaw/openclaw-lastpass/internal/lastpass"
-	"github.com/openclaw/openclaw-lastpass/internal/protocol"
-	"github.com/openclaw/openclaw-lastpass/internal/resolver"
+	"github.com/chikuma0/openclaw-lastpass/internal/config"
+	"github.com/chikuma0/openclaw-lastpass/internal/doctor"
+	"github.com/chikuma0/openclaw-lastpass/internal/lastpass"
+	"github.com/chikuma0/openclaw-lastpass/internal/protocol"
+	"github.com/chikuma0/openclaw-lastpass/internal/resolver"
 )
 
 const (
@@ -315,15 +315,15 @@ func printRootUsage(w io.Writer) {
 	for _, command := range commands {
 		switch command {
 		case "apply":
-			fmt.Fprintln(w, "  apply     Validate and write approved draft mappings to the resolver config")
+			fmt.Fprintln(w, "  apply     Validate and write approved draft plan entries into the resolver mapping")
 		case "discover":
-			fmt.Fprintln(w, "  discover  Scan LastPass metadata and write an editable draft mapping plan")
+			fmt.Fprintln(w, "  discover  Scan LastPass metadata and write an editable draft plan")
 		case "doctor":
 			fmt.Fprintln(w, "  doctor    Run local diagnostics for lpass access and mapping health")
 		case "get":
 			fmt.Fprintln(w, "  get       Resolve one configured secret ID")
 		case "init":
-			fmt.Fprintln(w, "  init      Guide first-run setup and generate discovery/draft files")
+			fmt.Fprintln(w, "  init      Guide first-run setup and write discovery metadata plus a draft plan")
 		case "list":
 			fmt.Fprintln(w, "  list      List configured secret IDs")
 		case "openclaw":

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/openclaw/openclaw-lastpass/internal/config"
+	"github.com/chikuma0/openclaw-lastpass/internal/config"
 )
 
 type Client interface {

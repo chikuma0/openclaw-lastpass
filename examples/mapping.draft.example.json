@@ -5,24 +5,36 @@
     {
       "lastpass_id": "377704248130093254",
       "name": "OPENAI_API_KEY",
-      "fullname": "API Keys/dera-next/OPENAI_API_KEY",
-      "group": "API Keys/dera-next",
+      "fullname": "Machine Secrets/acme/prod/OPENAI_API_KEY",
+      "group": "Machine Secrets/acme/prod",
       "suggested_ref_id": "providers/openai/apiKey",
-      "suggested_field": "notes",
+      "suggested_field": "password",
       "confidence": "high",
-      "reason": "matched openai/chatgpt naming with api key or token keywords in entry name/path",
-      "approved": false
+      "reason": "matched openai/api key naming in entry name/path",
+      "approved": true
     },
     {
       "lastpass_id": "122004098731245600",
+      "name": "runtime",
+      "fullname": "Machine Secrets/acme/prod/runtime",
+      "group": "Machine Secrets/acme/prod",
+      "suggested_ref_id": "services/acme/databaseUrl",
+      "suggested_field": "DATABASE_URL",
+      "confidence": "medium",
+      "reason": "reviewed by a human for a bundled repo/environment entry",
+      "approved": false
+    },
+    {
+      "lastpass_id": "981230004477550001",
       "name": "github_pat_repo_admin",
-      "fullname": "Tokens/github_pat_repo_admin",
-      "group": "Tokens",
+      "fullname": "Machine Secrets/shared/github_pat_repo_admin",
+      "group": "Machine Secrets/shared",
       "suggested_ref_id": "github/token",
-      "suggested_field": "notes",
+      "suggested_field": "password",
       "confidence": "high",
       "reason": "matched github personal access token naming in entry name/path",
-      "approved": true
+      "approved": true,
+      "disabled": true
     }
   ]
 }

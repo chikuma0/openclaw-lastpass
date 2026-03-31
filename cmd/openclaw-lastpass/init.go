@@ -8,9 +8,9 @@ import (
 	"io"
 	"path/filepath"
 
-	applypkg "github.com/openclaw/openclaw-lastpass/internal/apply"
-	"github.com/openclaw/openclaw-lastpass/internal/initflow"
-	"github.com/openclaw/openclaw-lastpass/internal/lastpass"
+	applypkg "github.com/chikuma0/openclaw-lastpass/internal/apply"
+	"github.com/chikuma0/openclaw-lastpass/internal/initflow"
+	"github.com/chikuma0/openclaw-lastpass/internal/lastpass"
 )
 
 func runInit(args []string, stdout, stderr io.Writer) int {

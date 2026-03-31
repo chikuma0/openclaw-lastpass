@@ -26,3 +26,9 @@ Local packaging command:
 ```
 
 GitHub Actions publishes release assets automatically when a `v*` tag is pushed.
+
+Published install command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/chikuma0/openclaw-lastpass/main/install.sh | bash
+```

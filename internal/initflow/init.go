@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/openclaw/openclaw-lastpass/internal/discovery"
-	"github.com/openclaw/openclaw-lastpass/internal/lastpass"
+	"github.com/chikuma0/openclaw-lastpass/internal/discovery"
+	"github.com/chikuma0/openclaw-lastpass/internal/lastpass"
 )
 
 var ErrLPassMissing = errors.New("lpass not installed")

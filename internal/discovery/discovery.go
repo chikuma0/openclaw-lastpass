@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/openclaw/openclaw-lastpass/internal/heuristic"
-	"github.com/openclaw/openclaw-lastpass/internal/lastpass"
-	"github.com/openclaw/openclaw-lastpass/internal/plan"
+	"github.com/chikuma0/openclaw-lastpass/internal/heuristic"
+	"github.com/chikuma0/openclaw-lastpass/internal/lastpass"
+	"github.com/chikuma0/openclaw-lastpass/internal/plan"
 )
 
 const Version1 = 1

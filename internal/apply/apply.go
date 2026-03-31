@@ -8,8 +8,8 @@ import (
 	"os/exec"
 	"sort"
 
-	"github.com/openclaw/openclaw-lastpass/internal/config"
-	"github.com/openclaw/openclaw-lastpass/internal/plan"
+	"github.com/chikuma0/openclaw-lastpass/internal/config"
+	"github.com/chikuma0/openclaw-lastpass/internal/plan"
 )
 
 type Validator interface {

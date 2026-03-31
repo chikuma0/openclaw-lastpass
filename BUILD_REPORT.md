@@ -32,7 +32,7 @@ It also includes:
 - users already have `lpass` installed and authenticated locally
 - OpenClaw will call the command with protocol version `1` and provider `lastpass`
 - LastPass entry names used in mappings are unique enough, or users will map by unique LastPass item ID instead
-- the repository module path can use `github.com/openclaw/openclaw-lastpass` for now; if the project is published elsewhere, the module path can be updated without changing the internal design
+- the repository module path should match the public repository path, which is now `github.com/chikuma0/openclaw-lastpass`
 
 ## 4. Known limitations
 

@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	applypkg "github.com/openclaw/openclaw-lastpass/internal/apply"
-	"github.com/openclaw/openclaw-lastpass/internal/config"
-	"github.com/openclaw/openclaw-lastpass/internal/discovery"
-	"github.com/openclaw/openclaw-lastpass/internal/lastpass"
-	"github.com/openclaw/openclaw-lastpass/internal/plan"
+	applypkg "github.com/chikuma0/openclaw-lastpass/internal/apply"
+	"github.com/chikuma0/openclaw-lastpass/internal/config"
+	"github.com/chikuma0/openclaw-lastpass/internal/discovery"
+	"github.com/chikuma0/openclaw-lastpass/internal/lastpass"
+	"github.com/chikuma0/openclaw-lastpass/internal/plan"
 )
 
 func runDiscover(args []string, stdout, stderr io.Writer) int {

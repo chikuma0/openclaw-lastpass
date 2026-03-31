@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/openclaw/openclaw-lastpass/internal/config"
+	"github.com/chikuma0/openclaw-lastpass/internal/config"
 )
 
 type Status string
