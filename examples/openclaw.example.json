@@ -1,0 +1,18 @@
+{
+  "secrets": {
+    "providers": {
+      "lastpass": {
+        "source": "exec",
+        "command": "/absolute/path/to/openclaw-lastpass",
+        "args": [
+          "openclaw"
+        ],
+        "passEnv": [
+          "HOME",
+          "PATH"
+        ],
+        "jsonOnly": true
+      }
+    }
+  }
+}

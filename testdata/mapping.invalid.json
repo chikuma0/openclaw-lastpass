@@ -1,0 +1,6 @@
+{
+  "providers/openai/apiKey": {
+    "entry": "OpenClaw/OpenAI",
+    "field": "Password",
+  }
+}

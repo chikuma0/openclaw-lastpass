@@ -1,0 +1,10 @@
+{
+  "providers/openai/apiKey": {
+    "entry": "OpenClaw/OpenAI",
+    "field": "Password"
+  },
+  "providers/anthropic/apiKey": {
+    "entry": "OpenClaw/Anthropic",
+    "field": "Password"
+  }
+}

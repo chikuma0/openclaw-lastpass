@@ -1,0 +1,18 @@
+{
+  "providers/openai/apiKey": {
+    "entry": "OpenClaw/OpenAI",
+    "field": "password"
+  },
+  "providers/anthropic/apiKey": {
+    "entry": "OpenClaw/Anthropic",
+    "field": "password"
+  },
+  "services/example/databaseUrl": {
+    "entry": "OpenClaw/Example Database",
+    "field": "DATABASE_URL"
+  },
+  "services/example/noteToken": {
+    "entry": "OpenClaw/Example Secure Note",
+    "field": "notes"
+  }
+}
